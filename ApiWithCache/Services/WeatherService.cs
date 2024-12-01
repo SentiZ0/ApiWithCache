@@ -5,7 +5,7 @@ namespace ApiWithCache.Services
 {
     public interface IWeatherService
     {
-        Task<Models.Weather> GetWeatherAsync(double latitude, double longitude);
+        Task<Models.Weather> GetWeatherByCityNameAsync(string name);
     }
 
     public class WeatherService : IWeatherService
@@ -19,32 +19,29 @@ namespace ApiWithCache.Services
             _cacheService = cacheService;
         }
 
-        public async Task<Models.Weather> GetWeatherAsync(double latitude, double longitude)
+        public async Task<Models.Weather> GetWeatherByCityNameAsync(string name)
         {
-            var response = await _weatherClient.GetCurrentWeatherByCoordinates(longitude, latitude);
+            var cacheValue = _cacheService.Get<WeatherResponse>(name);
 
-            if (response is null)
+            if (cacheValue is null)
             {
-                throw new Exception("Weather data not found");
-            }
+                var response = await _weatherClient.GetCurrentWeatherByCity(name);
 
-            if (string.IsNullOrEmpty(response.Name))
-            {
-                throw new InvalidOperationException("Response does not contain a valid name for caching.");
-            }
+                if (response is null)
+                {
+                    throw new Exception("Weather data not found");
+                }
 
-            var cacheValue = _cacheService.Get<WeatherResponse>(response.Name) ?? response;
+                _cacheService.Set(name, response);
 
-            if (cacheValue == response)
-            {
-                _cacheService.Set(response.Name, response);
+                cacheValue = response;
             }
 
             return new Models.Weather
             {
-                Longitude = longitude,
-                Latitude = latitude,
                 Name = cacheValue.Name,
+                Longitude = cacheValue.Coord.Lon,
+                Latitude = cacheValue.Coord.Lat,
                 Description = cacheValue.Weather[0].Description,
                 Country = cacheValue.Sys.Country,
                 TempMin = cacheValue.Main.Temp_Min,

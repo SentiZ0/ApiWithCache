@@ -14,10 +14,10 @@ namespace ApiWithCache.Controllers
             _weatherService = weatherService;
         }
 
-        [HttpGet("{latitude}/{longitude}")]
-        public async Task<IActionResult> GetWeather(double latitude, double longitude)
+        [HttpGet("{cityName}")]
+        public async Task<IActionResult> GetWeather(string cityName)
         {
-            var weather = await _weatherService.GetWeatherAsync(latitude, longitude);
+            var weather = await _weatherService.GetWeatherByCityNameAsync(cityName);
 
             return Ok(weather);
         }

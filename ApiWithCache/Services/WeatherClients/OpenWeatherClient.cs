@@ -6,7 +6,7 @@ namespace ApiWithCache.Services.WeatherClients
 {
     public interface IWeatherClient
     {
-        Task<WeatherResponse?> GetCurrentWeatherByCoordinates(double longitude, double latitude);
+        Task<WeatherResponse?> GetCurrentWeatherByCity(string name);
     }
 
     public class OpenWeatherClient : IWeatherClient
@@ -20,9 +20,9 @@ namespace ApiWithCache.Services.WeatherClients
             _options = options;
         }
 
-        public async Task<WeatherResponse?> GetCurrentWeatherByCoordinates(double longitude, double latitude)
+        public async Task<WeatherResponse?> GetCurrentWeatherByCity(string name)
         {
-            var requestUri = $"weather?lat={latitude}&lon={longitude}&appid={_options.Value.ApiKey}&units=metric";
+            var requestUri = $"weather?q={name}&appid={_options.Value.ApiKey}&units=metric";
             var response = await _httpClient.GetAsync(requestUri);
 
             if (!response.IsSuccessStatusCode)
