@@ -21,5 +21,12 @@ namespace ApiWithCache.Controllers
 
             return Ok(weather);
         }
+
+        [HttpPost("ClearCache")]
+        public async Task<IActionResult> ClearCache([FromBody] string cityName)
+        {
+            _weatherService.ClearCache(cityName);
+            return Ok();
+        }
     }
 }

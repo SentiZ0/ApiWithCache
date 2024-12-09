@@ -1,32 +1,52 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
+using System.Text.Json;
+using System.Threading;
 
 namespace ApiWithCache.Services
 {
     public interface ICacheService
     {
-        T Get<T>(string key);
-        void Set<T>(string key, T value);
+        Task<T> GetAsync<T>(string key);
+        Task SetAsync<T>(string key, T value, DateTimeOffset? absoluteExpiration = null);
+        Task RemoveAsync(string key);
     }
 
     public class CacheService : ICacheService
     {
-        private readonly IMemoryCache _memoryCache;
+        private readonly IDistributedCache _distributedCache;
 
-        public CacheService(IMemoryCache memoryCache)
+        public CacheService(IDistributedCache distributedCache)
         {
-            _memoryCache = memoryCache;
+            _distributedCache = distributedCache;
         }
 
-        public T Get<T>(string key)
+        public async Task<T> GetAsync<T>(string key)
         {
-            var value = _memoryCache.Get<T>(key);
+            var value = await _distributedCache.GetStringAsync(key);
 
-            return value;
+            if (value is null)
+                return default;
+
+            return JsonSerializer.Deserialize<T>(value);
         }
 
-        public void Set<T>(string key, T value)
+        public async Task SetAsync<T>(string key, T value, DateTimeOffset? absoluteExpiration = null)
         {
-            _memoryCache.Set(key, value);
+            var options = new DistributedCacheEntryOptions
+            {
+                AbsoluteExpiration = absoluteExpiration ?? DateTimeOffset.Now.AddHours(1)
+            };
+
+            var serializedValue = JsonSerializer.Serialize(value);
+
+            await _distributedCache.SetStringAsync(key, serializedValue, options);
+        }
+
+        public async Task RemoveAsync(string key)
+        {
+            await _distributedCache.RemoveAsync(key);
         }
     }
 }

@@ -20,10 +20,21 @@ builder.Services.AddScoped<ICacheService, CacheService>();
 builder.Services.Configure<OpenWeatherApiOptions>(
     builder.Configuration.GetSection("OpenWeatherApi"));
 
+builder.Services.Configure<RedisOptions>(
+    builder.Configuration.GetSection("Redis"));
+
 builder.Services.AddHttpClient("weatherapi", (serviceProvider, client) =>
 {
     var options = serviceProvider.GetRequiredService<IOptions<OpenWeatherApiOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl);
+});
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    var redisOptions = builder.Services.BuildServiceProvider()
+        .GetRequiredService<IOptions<RedisOptions>>().Value;
+
+    options.Configuration = redisOptions.ConnectionString;
 });
 
 
